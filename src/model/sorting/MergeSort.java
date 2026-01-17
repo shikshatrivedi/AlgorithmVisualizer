@@ -1,52 +1,57 @@
 package model.sorting;
 
+import model.AlgorithmStrategy;
 import model.AlgorithmStep;
-import model.SortingAlgorithm;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Merge Sort implementation.
- * A Divide and Conquer algorithm that divides the array into halves,
- * sorts them, and then merges them back together.
- */
-public class MergeSort extends SortingAlgorithm {
+public class MergeSort implements AlgorithmStrategy {
+    private List<AlgorithmStep> steps;
 
     @Override
-    public void sort(int[] arr) {
-        this.steps.clear();
-        addStep(arr, new int[]{}, "Starting Merge Sort", "START");
-        mergeSort(arr, 0, arr.length - 1);
-        addStep(arr, new int[]{}, "Sorting Complete", "FINISH");
+    public List<AlgorithmStep> generateSteps(int[] array, int target) {
+        steps = new ArrayList<>();
+        int[] arr = array.clone();
+        steps.add(new AlgorithmStep(arr.clone(), null, "Starting Merge Sort", "Start", 0));
+        
+        sort(arr, 0, arr.length - 1);
+        
+        steps.add(new AlgorithmStep(arr.clone(), null, "Merge Sort Complete", "Done", 0));
+        return steps;
     }
 
-    private void mergeSort(int[] arr, int left, int right) {
-        if (left < right) {
-            int mid = left + (right - left) / 2;
+    private void sort(int arr[], int l, int r) {
+        if (l < r) {
+            int m = l + (r - l) / 2;
 
-            // Divide: record the split
-            addStep(arr, new int[]{left, right}, "Splitting array from index " + left + " to " + right, "HIGHLIGHT");
+            sort(arr, l, m);
+            sort(arr, m + 1, r);
 
-            mergeSort(arr, left, mid);
-            mergeSort(arr, mid + 1, right);
-
-            // Conquer: merge the sorted halves
-            merge(arr, left, mid, right);
+            merge(arr, l, m, r);
         }
     }
 
-    private void merge(int[] arr, int left, int mid, int right) {
-        int n1 = mid - left + 1;
-        int n2 = right - mid;
+    private void merge(int arr[], int l, int m, int r) {
+        // Find sizes of two subarrays to be merged
+        int n1 = m - l + 1;
+        int n2 = r - m;
 
-        int[] L = new int[n1];
-        int[] R = new int[n2];
+        int L[] = new int[n1];
+        int R[] = new int[n2];
 
-        for (int i = 0; i < n1; ++i) L[i] = arr[left + i];
-        for (int j = 0; j < n2; ++j) R[j] = arr[mid + 1 + j];
+        for (int i = 0; i < n1; ++i) L[i] = arr[l + i];
+        for (int j = 0; j < n2; ++j) R[j] = arr[m + 1 + j];
 
         int i = 0, j = 0;
-        int k = left;
+        int k = l;
+        
+        // Visualize the range being merged
+        steps.add(new AlgorithmStep(arr.clone(), new int[]{l, r}, "Merging range " + l + " to " + r, "Merging", 0));
+
         while (i < n1 && j < n2) {
-            addStep(arr, new int[]{left + i, mid + 1 + j}, "Comparing elements from sub-arrays", "COMPARE");
+            // Visualize Comparison
+            steps.add(new AlgorithmStep(arr.clone(), new int[]{l + i, m + 1 + j}, "Comparing " + L[i] + " vs " + R[j], "Comparing", 0));
+
             if (L[i] <= R[j]) {
                 arr[k] = L[i];
                 i++;
@@ -54,20 +59,21 @@ public class MergeSort extends SortingAlgorithm {
                 arr[k] = R[j];
                 j++;
             }
-            addStep(arr, new int[]{k}, "Merging back into main array", "SWAP");
+            // Visualize Overwrite
+            steps.add(new AlgorithmStep(arr.clone(), new int[]{k}, "Overwriting index " + k, "Writing", 0));
             k++;
         }
 
         while (i < n1) {
             arr[k] = L[i];
-            addStep(arr, new int[]{k}, "Merging remaining elements", "SWAP");
+            steps.add(new AlgorithmStep(arr.clone(), new int[]{k}, "Copying remaining L", "Copying", 0));
             i++;
             k++;
         }
 
         while (j < n2) {
             arr[k] = R[j];
-            addStep(arr, new int[]{k}, "Merging remaining elements", "SWAP");
+            steps.add(new AlgorithmStep(arr.clone(), new int[]{k}, "Copying remaining R", "Copying", 0));
             j++;
             k++;
         }

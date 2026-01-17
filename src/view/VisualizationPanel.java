@@ -3,63 +3,158 @@ package view;
 import model.AlgorithmStep;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.Path2D;
+import java.awt.geom.RoundRectangle2D;
+import java.awt.geom.Ellipse2D;
 
-/**
- * The screen where the algorithm is drawn.
- * It converts the array numbers into colorful bars.
- */
 public class VisualizationPanel extends JPanel {
     private AnimationManager animationManager;
+    
+    // Cyberpunk Palette
+    private final Color BG_COLOR = new Color(20, 20, 28);
+    private final Color GRID_COLOR = new Color(255, 255, 255, 10);
+    private final Color BAR_START = new Color(0, 200, 255);
+    private final Color BAR_END = new Color(100, 50, 255);
+    private final Color HIGHLIGHT = new Color(255, 100, 0); // Orange
+    private final Color NODE_COLOR = new Color(40, 40, 50);
+    private final Color LINE_COLOR = new Color(100, 100, 120);
 
-    public VisualizationPanel(AnimationManager animationManager) {
-        this.animationManager = animationManager;
-        this.setBackground(Color.WHITE);
-        this.setPreferredSize(new Dimension(800, 400));
+    // Toggle for Tree Mode
+    private boolean isTreeMode = false;
+
+    public VisualizationPanel(AnimationManager am) {
+        this.animationManager = am;
+        this.setBackground(BG_COLOR);
+    }
+
+    public void setTreeMode(boolean isTree) {
+        this.isTreeMode = isTree;
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        drawGrid(g2);
         
-        AlgorithmStep currentStep = animationManager.getCurrentStep();
-        if (currentStep == null) return;
+        // Border
+        g2.setColor(new Color(60, 60, 80));
+        g2.drawRoundRect(10, 10, getWidth() - 20, getHeight() - 20, 30, 30);
 
-        int[] array = currentStep.getArraySnapshot();
-        int[] highlights = currentStep.getHighlightedIndices();
-        String type = currentStep.getActionType();
+        AlgorithmStep step = animationManager.getCurrentStep();
+        if (step == null) {
+            drawCenteredText(g2, "PRESS GENERATE TO START", getWidth() / 2, getHeight() / 2);
+            return;
+        }
 
-        int width = getWidth();
-        int height = getHeight();
-        int barWidth = width / array.length;
+        if (isTreeMode) {
+            drawTree(g2, step.getArraySnapshot(), step.getHighlightedIndices());
+        } else {
+            drawBars(g2, step.getArraySnapshot(), step.getHighlightedIndices());
+        }
+    }
 
-        // Find max value to scale the bars correctly
-        int maxValue = 0;
-        for (int val : array) if (val > maxValue) maxValue = val;
+    // --- MODE 1: BARS (Sorting) ---
+    private void drawBars(Graphics2D g2, int[] array, int[] highlights) {
+        int n = array.length;
+        int padding = 80;
+        int availableWidth = getWidth() - (2 * padding);
+        int barWidth = Math.max(10, (availableWidth / n) - 10);
+        int maxVal = 0;
+        for (int v : array) maxVal = Math.max(maxVal, v);
 
-        for (int i = 0; i < array.length; i++) {
-            int barHeight = (int) (((double) array[i] / maxValue) * (height - 50));
-            
-            // Default color: Light Blue
-            g.setColor(new Color(173, 216, 230));
+        for (int i = 0; i < n; i++) {
+            int val = array[i];
+            int barHeight = (int) (((double) val / maxVal) * (getHeight() - 250));
+            int x = padding + i * (barWidth + 10);
+            int y = getHeight() - barHeight - 100;
 
-            // Change color based on what's happening
-            for (int h : highlights) {
-                if (i == h) {
-                    if (type.equals("COMPARE")) g.setColor(Color.YELLOW);
-                    else if (type.equals("SWAP")) g.setColor(Color.RED);
-                    else if (type.equals("HIGHLIGHT")) g.setColor(Color.ORANGE);
-                    else if (type.equals("SORTED")) g.setColor(Color.GREEN);
+            Color c1 = BAR_START;
+            Color c2 = BAR_END;
+
+            if (highlights != null) {
+                for (int h : highlights) {
+                    if (h == i) { c1 = new Color(255, 50, 50); c2 = HIGHLIGHT; }
                 }
             }
 
-            // Draw the bar
-            int x = i * barWidth;
-            int y = height - barHeight;
-            g.fillRect(x + 2, y, barWidth - 4, barHeight);
-            
-            // Draw the number above/on the bar
-            g.setColor(Color.BLACK);
-            g.drawString(String.valueOf(array[i]), x + (barWidth / 2) - 5, y - 5);
+            GradientPaint gp = new GradientPaint(x, y, c1, x, y + barHeight, c2);
+            g2.setPaint(gp);
+            g2.fill(new RoundRectangle2D.Double(x, y, barWidth, barHeight, 15, 15));
+
+            // Text
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+            String text = String.valueOf(val);
+            g2.drawString(text, x + (barWidth - g2.getFontMetrics().stringWidth(text)) / 2, y - 10);
         }
+    }
+
+    // --- MODE 2: TREE (Traversal) ---
+    private void drawTree(Graphics2D g2, int[] array, int[] highlights) {
+        if (array.length == 0) return;
+        // Start recursive drawing from root (index 0)
+        // Position root at center-top
+        drawRecursiveNode(g2, array, highlights, 0, getWidth() / 2, 80, getWidth() / 4);
+    }
+
+    private void drawRecursiveNode(Graphics2D g2, int[] array, int[] highlights, int index, int x, int y, int xOffset) {
+        if (index >= array.length) return;
+
+        // Draw Left Link
+        int leftIndex = 2 * index + 1;
+        if (leftIndex < array.length) {
+            g2.setColor(LINE_COLOR);
+            g2.setStroke(new BasicStroke(2));
+            g2.drawLine(x, y + 20, x - xOffset, y + 80 - 20);
+            drawRecursiveNode(g2, array, highlights, leftIndex, x - xOffset, y + 80, xOffset / 2);
+        }
+
+        // Draw Right Link
+        int rightIndex = 2 * index + 2;
+        if (rightIndex < array.length) {
+            g2.setColor(LINE_COLOR);
+            g2.setStroke(new BasicStroke(2));
+            g2.drawLine(x, y + 20, x + xOffset, y + 80 - 20);
+            drawRecursiveNode(g2, array, highlights, rightIndex, x + xOffset, y + 80, xOffset / 2);
+        }
+
+        // Draw Current Node (Circle)
+        int r = 40; // Diameter
+        Color fill = NODE_COLOR;
+        Color textC = Color.WHITE;
+
+        if (highlights != null) {
+            for (int h : highlights) {
+                if (h == index) { fill = HIGHLIGHT; textC = Color.BLACK; }
+            }
+        }
+
+        g2.setColor(fill);
+        g2.fill(new Ellipse2D.Double(x - r/2, y - r/2, r, r));
+        g2.setColor(Color.CYAN);
+        g2.setStroke(new BasicStroke(2));
+        g2.draw(new Ellipse2D.Double(x - r/2, y - r/2, r, r));
+
+        // Text
+        g2.setColor(textC);
+        g2.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        String val = String.valueOf(array[index]);
+        int tw = g2.getFontMetrics().stringWidth(val);
+        g2.drawString(val, x - tw / 2, y + 6);
+    }
+
+    private void drawGrid(Graphics2D g2) {
+        g2.setColor(GRID_COLOR);
+        for (int i = 0; i < getWidth(); i += 50) g2.drawLine(i, 0, i, getHeight());
+        for (int i = 0; i < getHeight(); i += 50) g2.drawLine(0, i, getWidth(), i);
+    }
+
+    private void drawCenteredText(Graphics2D g2, String text, int x, int y) {
+        g2.setColor(Color.GRAY);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+        g2.drawString(text, x - g2.getFontMetrics().stringWidth(text) / 2, y);
     }
 }

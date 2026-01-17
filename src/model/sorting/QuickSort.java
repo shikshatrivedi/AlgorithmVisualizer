@@ -1,62 +1,66 @@
 package model.sorting;
 
+import model.AlgorithmStrategy;
 import model.AlgorithmStep;
-import model.SortingAlgorithm;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Quick Sort implementation.
- * It picks an element as 'pivot' and partitions the given array around the pivot.
- */
-public class QuickSort extends SortingAlgorithm {
+public class QuickSort implements AlgorithmStrategy {
+    private List<AlgorithmStep> steps;
 
     @Override
-    public void sort(int[] arr) {
-        this.steps.clear();
-        addStep(arr, new int[]{}, "Starting Quick Sort", "START");
-        quickSort(arr, 0, arr.length - 1);
-        addStep(arr, new int[]{}, "Sorting Complete", "FINISH");
+    public List<AlgorithmStep> generateSteps(int[] array, int target) {
+        steps = new ArrayList<>();
+        int[] arr = array.clone();
+        
+        steps.add(new AlgorithmStep(arr.clone(), null, "Starting Quick Sort", "Start", 0));
+        sort(arr, 0, arr.length - 1);
+        steps.add(new AlgorithmStep(arr.clone(), null, "Quick Sort Complete!", "Done", 0));
+        
+        return steps;
     }
 
-    private void quickSort(int[] arr, int low, int high) {
+    private void sort(int[] arr, int low, int high) {
         if (low < high) {
-            // partitionIndex is partitioning index, arr[pi] is now at right place
+            // pi is partitioning index, arr[pi] is now at right place
             int pi = partition(arr, low, high);
 
             // Recursively sort elements before partition and after partition
-            quickSort(arr, low, pi - 1);
-            quickSort(arr, pi + 1, high);
+            sort(arr, low, pi - 1);
+            sort(arr, pi + 1, high);
         }
     }
 
     private int partition(int[] arr, int low, int high) {
         int pivot = arr[high];
-        addStep(arr, new int[]{high}, "Chosen pivot: " + pivot, "HIGHLIGHT");
-        
-        int i = (low - 1); // index of smaller element
+        // Visualize Pivot Selection
+        steps.add(new AlgorithmStep(arr.clone(), new int[]{high}, "Pivot Selected: " + pivot, "Partitioning", 0));
+
+        int i = (low - 1); // Index of smaller element
 
         for (int j = low; j < high; j++) {
-            addStep(arr, new int[]{j, high}, "Comparing " + arr[j] + " with pivot " + pivot, "COMPARE");
-            
-            // If current element is smaller than or equal to pivot
-            if (arr[j] <= pivot) {
-                i++;
+            // Visualize Comparison
+            steps.add(new AlgorithmStep(arr.clone(), new int[]{j, high}, "Comparing " + arr[j] + " vs Pivot " + pivot, "Comparing", 0));
 
-                // swap arr[i] and arr[j]
+            if (arr[j] < pivot) {
+                i++;
+                // Swap arr[i] and arr[j]
                 int temp = arr[i];
                 arr[i] = arr[j];
                 arr[j] = temp;
                 
-                addStep(arr, new int[]{i, j}, "Swapping elements to move smaller to the left", "SWAP");
+                // Visualize Swap
+                steps.add(new AlgorithmStep(arr.clone(), new int[]{i, j}, "Swapping " + arr[i] + " and " + arr[j], "Swapping", 0));
             }
         }
 
-        // swap arr[i+1] and arr[high] (or pivot)
+        // Swap arr[i+1] and arr[high] (or pivot)
         int temp = arr[i + 1];
         arr[i + 1] = arr[high];
         arr[high] = temp;
 
-        addStep(arr, new int[]{i + 1, high}, "Moving pivot to its correct sorted position", "SWAP");
-        addStep(arr, new int[]{i + 1}, "Pivot is now at its final position", "SORTED");
+        // Visualize Pivot Placement
+        steps.add(new AlgorithmStep(arr.clone(), new int[]{i + 1}, "Pivot placed at index " + (i+1), "Placed", 0));
 
         return i + 1;
     }

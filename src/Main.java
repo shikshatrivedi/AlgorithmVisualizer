@@ -3,42 +3,43 @@ import view.*;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * This is the starting point of the entire application.
- * It assembles the View and the Controller together.
- */
 public class Main {
     public static void main(String[] args) {
-        // Run the GUI on the Event Dispatch Thread (standard Java practice)
+        // GLOBAL SETTINGS FOR BEAUTY
+        System.setProperty("awt.useSystemAAFontSettings", "on");
+        System.setProperty("swing.aatext", "true");
+
         SwingUtilities.invokeLater(() -> {
-            // 1. Setup the Frame (The Window)
-            JFrame frame = new JFrame("Algorithm Visualizer 1.0");
+            JFrame frame = new JFrame("ALGO-VISION PRO v2.0");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLayout(new BorderLayout());
+            
+            // Set Dark Background for the whole frame
+            frame.getContentPane().setBackground(new Color(18, 18, 24));
 
-            // 2. Initialize View Components
-            AnimationManager animationManager = new AnimationManager();
-            VisualizationPanel vizPanel = new VisualizationPanel(animationManager);
+            // Initialize Components
+            AnimationManager am = new AnimationManager();
+            VisualizationPanel vizPanel = new VisualizationPanel(am);
             InputPanel inputPanel = new InputPanel();
             ControlPanel controlPanel = new ControlPanel();
             InfoPanel infoPanel = new InfoPanel();
 
-            // 3. Add Panels to the Frame
-            frame.add(inputPanel, BorderLayout.NORTH);   // Top: Inputs
-            frame.add(vizPanel, BorderLayout.CENTER);    // Middle: The Bars
+            // Layout
+            frame.add(inputPanel, BorderLayout.NORTH);
+            frame.add(vizPanel, BorderLayout.CENTER);
             
-            // A sub-panel to hold both Controls and Info at the bottom
-            JPanel bottomPanel = new JPanel(new BorderLayout());
-            bottomPanel.add(controlPanel, BorderLayout.NORTH);
-            bottomPanel.add(infoPanel, BorderLayout.SOUTH);
-            frame.add(bottomPanel, BorderLayout.SOUTH);
+            JPanel bottomContainer = new JPanel(new BorderLayout());
+            bottomContainer.add(controlPanel, BorderLayout.NORTH);
+            bottomContainer.add(infoPanel, BorderLayout.SOUTH);
+            frame.add(bottomContainer, BorderLayout.SOUTH);
 
-            // 4. Start the Controller (The Brain)
-            new MainController(animationManager, vizPanel, inputPanel, controlPanel, infoPanel);
+            // Start Controller
+            new MainController(am, vizPanel, inputPanel, controlPanel, infoPanel);
 
-            // 5. Finalize the Window
+            // Final Display Settings
+            frame.setPreferredSize(new Dimension(1200, 800));
             frame.pack();
-            frame.setLocationRelativeTo(null); // Centers the window on screen
+            frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
     }

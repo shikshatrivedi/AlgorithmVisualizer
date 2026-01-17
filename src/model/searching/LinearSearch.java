@@ -1,33 +1,33 @@
 package model.searching;
 
+import model.AlgorithmStrategy;
 import model.AlgorithmStep;
-import model.SearchingAlgorithm;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Linear Search implementation.
- * It checks every single element in the array one by one until the target is found.
- */
-public class LinearSearch extends SearchingAlgorithm {
+public class LinearSearch implements AlgorithmStrategy {
 
     @Override
-    public void search(int[] arr, int target) {
-        this.target = target;
-        this.steps.clear();
-        this.resultIndex = -1;
+    public List<AlgorithmStep> generateSteps(int[] array, int target) {
+        List<AlgorithmStep> steps = new ArrayList<>();
+        int[] arr = array.clone(); // Keep original array structure
 
-        addStep(arr, new int[]{}, "Starting Linear Search for: " + target, "START");
+        steps.add(new AlgorithmStep(arr.clone(), null));
 
         for (int i = 0; i < arr.length; i++) {
-            // Record that we are checking this specific index
-            addStep(arr, new int[]{i}, "Checking index " + i + " (Value: " + arr[i] + ")", "COMPARE");
+            // Highlight the current index being checked
+            steps.add(new AlgorithmStep(arr.clone(), new int[]{i}));
 
             if (arr[i] == target) {
-                this.resultIndex = i;
-                addStep(arr, new int[]{i}, "Target " + target + " found at index " + i + "!", "FINISH");
-                return;
+                // FOUND! You might want to handle a "success" color in the View later,
+                // but for now, we just end the animation here.
+                steps.add(new AlgorithmStep(arr.clone(), new int[]{i})); 
+                return steps;
             }
         }
 
-        addStep(arr, new int[]{}, "Target " + target + " not found in the array.", "FINISH");
+        // Target not found step
+        steps.add(new AlgorithmStep(arr.clone(), null));
+        return steps;
     }
 }

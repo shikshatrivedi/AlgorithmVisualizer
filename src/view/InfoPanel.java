@@ -3,31 +3,22 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * A panel to display text descriptions of the current algorithm step.
- */
 public class InfoPanel extends JPanel {
-    private JLabel statusLabel;
-    private JLabel stepCounterLabel;
+    private JLabel infoLabel;
 
     public InfoPanel() {
-        this.setLayout(new BorderLayout());
-        this.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        this.setBackground(Color.DARK_GRAY);
+        this.setBackground(new Color(25, 25, 35));
+        this.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        this.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(100, 100, 100)));
 
-        statusLabel = new JLabel("Enter an array and press Start");
-        statusLabel.setForeground(Color.WHITE);
-        statusLabel.setFont(new Font("Arial", Font.BOLD, 14));
-
-        stepCounterLabel = new JLabel("Step: 0/0");
-        stepCounterLabel.setForeground(Color.WHITE);
-
-        this.add(statusLabel, BorderLayout.WEST);
-        this.add(stepCounterLabel, BorderLayout.EAST);
+        infoLabel = new JLabel("Status: Ready to visualize...");
+        infoLabel.setFont(new Font("Consolas", Font.PLAIN, 14)); // Code font
+        infoLabel.setForeground(new Color(0, 255, 128)); // Matrix Green
+        
+        add(infoLabel);
     }
 
-    public void updateInfo(String message, int currentStep, int totalSteps) {
-        statusLabel.setText(message);
-        stepCounterLabel.setText("Step: " + currentStep + "/" + totalSteps);
+    public void updateInfo(String description, int step, int total) {
+        infoLabel.setText(String.format("Step: %d/%d | %s", step, total, description));
     }
 }

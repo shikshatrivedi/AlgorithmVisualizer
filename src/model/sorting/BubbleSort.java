@@ -1,43 +1,42 @@
 package model.sorting;
 
+import model.AlgorithmStrategy;
 import model.AlgorithmStep;
-import model.SortingAlgorithm;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Bubble Sort implementation.
- * It compares neighbors and "bubbles" the largest number to the end.
- */
-public class BubbleSort extends SortingAlgorithm {
+public class BubbleSort implements AlgorithmStrategy {
 
     @Override
-    public void sort(int[] arr) {
+    public List<AlgorithmStep> generateSteps(int[] array, int target) {
+        List<AlgorithmStep> steps = new ArrayList<>();
+        
+        // Working with a copy to avoid modifying the original immediately
+        int[] arr = array.clone();
         int n = arr.length;
-        // Clear any previous steps
-        this.steps.clear();
 
-        // 1. Initial snapshot of the unsorted array
-        addStep(arr, new int[]{}, "Starting Bubble Sort", "START");
+        // Add initial state
+        steps.add(new AlgorithmStep(arr.clone(), null));
 
         for (int i = 0; i < n - 1; i++) {
             for (int j = 0; j < n - i - 1; j++) {
-                // 2. Record Comparison Step
-                addStep(arr, new int[]{j, j + 1}, "Comparing " + arr[j] + " and " + arr[j+1], "COMPARE");
+                // 1. Highlight the two bars being compared (Red/Pink in your new UI)
+                steps.add(new AlgorithmStep(arr.clone(), new int[]{j, j + 1}));
 
                 if (arr[j] > arr[j + 1]) {
-                    // Swap the elements
+                    // Swap logic
                     int temp = arr[j];
                     arr[j] = arr[j + 1];
                     arr[j + 1] = temp;
 
-                    // 3. Record Swap Step
-                    addStep(arr, new int[]{j, j + 1}, "Swapping " + arr[j+1] + " and " + arr[j], "SWAP");
+                    // 2. Snapshot after swap to show the change
+                    steps.add(new AlgorithmStep(arr.clone(), new int[]{j, j + 1}));
                 }
             }
-            // 4. Mark the end of the array as sorted
-            addStep(arr, new int[]{n - 1 - i}, "Element at index " + (n-1-i) + " is sorted", "SORTED");
         }
         
-        // 5. Final snapshot
-        addStep(arr, new int[]{}, "Sorting Complete", "FINISH");
+        // Final state (no highlights)
+        steps.add(new AlgorithmStep(arr.clone(), null));
+        return steps;
     }
 }
