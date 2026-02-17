@@ -3,8 +3,7 @@ package view;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.ItemListener;
 import java.awt.geom.RoundRectangle2D;
 
 public class InputPanel extends JPanel {
@@ -21,24 +20,29 @@ public class InputPanel extends JPanel {
 
     public InputPanel() {
         this.setBackground(BG_DARK);
-        this.setLayout(new GridBagLayout()); // Using GridBag for precise centering
-        this.setBorder(new EmptyBorder(20, 20, 20, 20));
+        this.setLayout(new GridBagLayout());
+        this.setBorder(new EmptyBorder(18, 20, 18, 20));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 15, 10, 15); // Generous padding
+        gbc.insets = new Insets(8, 12, 8, 12);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // 1. Algorithm Selector (Big & Bold)
-       String[] algos = {"Bubble Sort", "Selection Sort", "Insertion Sort", "Merge Sort", "Quick Sort", "Linear Search", "Binary Search","Inorder Traversal (Tree)"};
+        // 1. Algorithm Selector
+        String[] algos = {
+            "Bubble Sort", "Selection Sort", "Insertion Sort",
+            "Merge Sort", "Quick Sort",
+            "Linear Search", "Binary Search",
+            "Array Tree Traversal"
+        };
         algoSelector = new JComboBox<>(algos);
-        algoSelector.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        algoSelector.setFont(new Font("Segoe UI", Font.BOLD, 15));
         algoSelector.setBackground(TEXT_FIELD_BG);
         algoSelector.setForeground(Color.WHITE);
-        algoSelector.setPreferredSize(new Dimension(200, 45));
-        
+        algoSelector.setPreferredSize(new Dimension(200, 42));
+
         // 2. Array Input
         JLabel lblArray = createLabel("Input Array:");
-        arrayInput = createStyledTextField("15, 30, 10, 50, 25", 20);
+        arrayInput = createStyledTextField("15, 30, 10, 50, 25", 18);
 
         // 3. Target Input
         JLabel lblTarget = createLabel("Target:");
@@ -66,10 +70,10 @@ public class InputPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 0;
         add(lblArray, gbc);
 
-        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         add(arrayInput, gbc);
 
-        gbc.gridx = 2; gbc.gridy = 0;
+        gbc.gridx = 2; gbc.gridy = 0; gbc.weightx = 0;
         add(lblTarget, gbc);
 
         gbc.gridx = 3; gbc.gridy = 0;
@@ -91,7 +95,7 @@ public class InputPanel extends JPanel {
 
     private JTextField createStyledTextField(String text, int cols) {
         JTextField field = new JTextField(text, cols);
-        field.setFont(new Font("Consolas", Font.PLAIN, 18)); // Large Monospace font
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         field.setBackground(TEXT_FIELD_BG);
         field.setForeground(NEON_BLUE);
         field.setCaretColor(Color.WHITE);
@@ -106,15 +110,27 @@ public class InputPanel extends JPanel {
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btn.setForeground(Color.WHITE);
         btn.setFocusPainted(false);
-        btn.setContentAreaFilled(false); // Important for custom gradient
+        btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(200, 50)); // BIG BUTTON
+        btn.setPreferredSize(new Dimension(200, 48));
     }
 
-    // Getters
+    // --- Public API ---
     public String getArrayInput() { return arrayInput.getText(); }
     public String getTargetInput() { return targetInput.getText(); }
     public String getSelectedAlgorithm() { return (String) algoSelector.getSelectedItem(); }
     public void addGenerateListener(java.awt.event.ActionListener l) { generateButton.addActionListener(l); }
+
+    /** Enable/disable the target input field. */
+    public void setTargetEnabled(boolean enabled) {
+        targetInput.setEnabled(enabled);
+        targetInput.setBackground(enabled ? TEXT_FIELD_BG : new Color(30, 30, 38));
+        targetInput.setForeground(enabled ? NEON_BLUE : new Color(80, 80, 90));
+    }
+
+    /** Listen for algorithm combo-box selection changes. */
+    public void addAlgoChangeListener(ItemListener l) {
+        algoSelector.addItemListener(l);
+    }
 }

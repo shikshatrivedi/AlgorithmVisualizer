@@ -86,7 +86,7 @@ public class VisualizationPanel extends JPanel {
 
             // Text
             g2.setColor(Color.WHITE);
-            g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+            g2.setFont(new Font("Segoe UI", Font.BOLD, 14));
             String text = String.valueOf(val);
             g2.drawString(text, x + (barWidth - g2.getFontMetrics().stringWidth(text)) / 2, y - 10);
         }
@@ -154,7 +154,7 @@ public class VisualizationPanel extends JPanel {
 
     private void drawCenteredText(Graphics2D g2, String text, int x, int y) {
         g2.setColor(Color.GRAY);
-        g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+        g2.setFont(new Font("Segoe UI", Font.BOLD, 20));
         g2.drawString(text, x - g2.getFontMetrics().stringWidth(text) / 2, y);
     }
 }

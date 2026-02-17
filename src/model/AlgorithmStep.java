@@ -1,38 +1,68 @@
 package model;
 
-public class AlgorithmStep {
-    private int[] arraySnapshot;
-    private int[] highlightedIndices;
-    private String description;
-    private String status;
-    private int complexityLine;
+import java.util.Arrays;
 
-    // --- CONSTRUCTOR 1: The "Simple" Fix (Solves your 16 errors) ---
-    // This allows your existing algorithms to work without changing them.
+/**
+ * Immutable snapshot of a single algorithm step for visualization.
+ * All array data is defensively cloned on construction and retrieval.
+ */
+public class AlgorithmStep {
+    private final int[] arraySnapshot;
+    private final int[] highlightedIndices;
+    private final String description;
+    private final String status;
+    private final int complexityLine;
+    private final int stepNumber;
+
+    // --- CONSTRUCTOR 1: Simple (backward-compatible) ---
     public AlgorithmStep(int[] array, int[] highlights) {
-        this(array, highlights, "Processing...", "Active", 0); 
+        this(array, highlights, "Processing...", "Active", 0, 0);
     }
 
-    // --- CONSTRUCTOR 2: The "Advanced" Version ---
-    // This keeps the "intense" features available for later.
+    // --- CONSTRUCTOR 2: Advanced (full metadata) ---
     public AlgorithmStep(int[] array, int[] highlights, String description, String status, int complexityLine) {
+        this(array, highlights, description, status, complexityLine, 0);
+    }
+
+    // --- CONSTRUCTOR 3: Complete (with step number) ---
+    public AlgorithmStep(int[] array, int[] highlights, String description, String status, int complexityLine, int stepNumber) {
         this.arraySnapshot = array != null ? array.clone() : new int[0];
-        this.highlightedIndices = highlights;
+        this.highlightedIndices = highlights != null ? highlights.clone() : null;
         this.description = description;
         this.status = status;
         this.complexityLine = complexityLine;
+        this.stepNumber = stepNumber;
     }
 
-    // Getters
+    // --- Immutable Getters (return clones) ---
     public int[] getArraySnapshot() {
-        return arraySnapshot;
+        return arraySnapshot.clone();
     }
 
     public int[] getHighlightedIndices() {
-        return highlightedIndices;
+        return highlightedIndices != null ? highlightedIndices.clone() : null;
     }
-    
+
     public String getDescription() {
         return description;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public int getComplexityLine() {
+        return complexityLine;
+    }
+
+    public int getStepNumber() {
+        return stepNumber;
+    }
+
+    @Override
+    public String toString() {
+        return "AlgorithmStep{step=" + stepNumber + ", array=" + Arrays.toString(arraySnapshot) +
+               ", highlights=" + Arrays.toString(highlightedIndices) +
+               ", desc='" + description + "'}";
     }
 }

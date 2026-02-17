@@ -51,4 +51,9 @@ public class AnimationManager {
     public int getTotalSteps() {
         return steps == null ? 0 : steps.size();
     }
+
+    /** Reset the animation to the first step. */
+    public void resetToStart() {
+        this.currentStepIndex = 0;
+    }
 }

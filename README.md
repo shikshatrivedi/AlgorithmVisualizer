@@ -52,19 +52,21 @@ A high-performance, interactive desktop application that visualizes sorting, sea
 
 
 
+### 🎮 Controls
+
+*   **Keyboard Shortcuts:**
+    *   `Space`: Play/Pause
+    *   `Right Arrow`: Next Step
+    *   `Left Arrow`: Previous Step
+    *   `R`: Reset
+*   **Mouse Controls:**
+    *   `Play/Pause/Prev/Next`: Standard playback
+    *   `Reset`: Return to start
+    *   `Restart`: Reset and auto-play
+    *   `Speed Slider`: Drag right for speed up to x10
+
 \## 💻 How to Run
 
-
-
-1\.  \*\*Compile:\*\*
-
-&nbsp;   `javac -d bin src/model/\*.java src/model/sorting/\*.java src/model/searching/\*.java src/model/tree/\*.java src/view/\*.java src/controller/\*.java src/test/\*.java src/Main.java`
-
-
-
-2\.  \*\*Run App:\*\*
-
-&nbsp;   `java -cp bin Main`
 
 
 

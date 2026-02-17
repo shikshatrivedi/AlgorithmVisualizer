@@ -16,9 +16,8 @@ import model.tree.InorderTraversal;
 import view.*;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays; // Import needed for auto-sorting
+import java.awt.event.ItemEvent;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainController {
@@ -27,17 +26,24 @@ public class MainController {
     private InputPanel inputPanel;
     private ControlPanel controlPanel;
     private InfoPanel infoPanel;
+    private HeaderPanel headerPanel;
     private Timer timer;
 
-    public MainController(AnimationManager am, VisualizationPanel vp, InputPanel ip, ControlPanel cp, InfoPanel info) {
+    // Track current algorithm info for InfoPanel
+    private String currentAlgoName = "";
+    private String currentComplexity = "";
+
+    public MainController(AnimationManager am, VisualizationPanel vp, InputPanel ip, ControlPanel cp, InfoPanel info, HeaderPanel hp) {
         this.animationManager = am;
         this.vizPanel = vp;
         this.inputPanel = ip;
         this.controlPanel = cp;
         this.infoPanel = info;
+        this.headerPanel = hp;
 
-        // 1. Initialize the Timer (The Heartbeat)
-        timer = new Timer(controlPanel.getSpeed(), e -> stepForward());
+        // 1. Initialize the Timer (speed slider logic refined)
+        // Default delay 500ms (based on slider middle)
+        timer = new Timer(500, e -> stepForward());
 
         // 2. Connect the "Generate" Button
         inputPanel.addGenerateListener(e -> handleGenerate());
@@ -47,15 +53,60 @@ public class MainController {
         controlPanel.addPauseListener(e -> pause());
         controlPanel.addNextListener(e -> stepForward());
         controlPanel.addPrevListener(e -> stepBackward());
-        
-        // 4. Connect Speed Slider
+        controlPanel.addResetListener(e -> handleReset());
+        controlPanel.addRestartListener(e -> handleRestart());
+
+        // 5. Connect Speed Slider
+        // Mapping: Value 0..990
+        // Delay = 1000 - value. Min delay 10ms.
         controlPanel.addSpeedListener(e -> {
-            int newSpeed = controlPanel.getSpeed();
-            timer.setDelay(newSpeed);
+            int val = controlPanel.getSpeed();
+            int newDelay = 1000 - val;
+            if (newDelay < 10) newDelay = 10; 
+            timer.setDelay(newDelay);
         });
+
+        // 6. Auto-disable target input based on algorithm selection
+        inputPanel.addAlgoChangeListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                String selected = (String) e.getItem();
+                boolean isSearch = selected.contains("Search");
+                inputPanel.setTargetEnabled(isSearch);
+            }
+        });
+
+        // Initialize target state based on default selection
+        String defaultAlgo = inputPanel.getSelectedAlgorithm();
+        inputPanel.setTargetEnabled(defaultAlgo.contains("Search"));
     }
 
     // --- Action Handlers ---
+
+    // NEW: Public method to attach keyboard listeners to the Frame
+    public void setupKeyboardControls(JFrame frame) {
+        frame.setFocusable(true);
+        frame.requestFocusInWindow();
+        frame.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                int key = e.getKeyCode();
+                switch (key) {
+                    case java.awt.event.KeyEvent.VK_SPACE:
+                        if (timer.isRunning()) pause(); else play();
+                        break;
+                    case java.awt.event.KeyEvent.VK_RIGHT:
+                        stepForward();
+                        break;
+                    case java.awt.event.KeyEvent.VK_LEFT:
+                        stepBackward();
+                        break;
+                    case java.awt.event.KeyEvent.VK_R:
+                        handleReset();
+                        break;
+                }
+            }
+        });
+    }
 
     private void handleGenerate() {
         try {
@@ -64,13 +115,28 @@ public class MainController {
             String targetStr = inputPanel.getTargetInput();
             String algoType = inputPanel.getSelectedAlgorithm();
 
+            // Update Header
+            headerPanel.setAlgorithmName(algoType);
+
             // Parse inputs
             int[] data = parseArray(arrayStr);
-            int target = targetStr.isEmpty() ? 0 : Integer.parseInt(targetStr.trim());
+            if (data.length == 0) throw new IllegalArgumentException("Array cannot be empty.");
+            
+            int target = 0;
+            if (!targetStr.trim().isEmpty()) {
+                try {
+                    target = Integer.parseInt(targetStr.trim());
+                } catch (NumberFormatException ex) {
+                    // Ignore target error if not searching, or handle gracefully
+                    if (algoType.contains("Search")) {
+                        throw new IllegalArgumentException("Target must be a valid number.");
+                    }
+                }
+            }
 
             AlgorithmStrategy algorithm;
             
-            // IMPORTANT: Reset Tree Mode by default (assume we are doing bars)
+            // IMPORTANT: Reset Tree Mode by default
             vizPanel.setTreeMode(false);
 
             // Switch to select the correct logic
@@ -83,15 +149,18 @@ public class MainController {
                 case "Linear Search":  algorithm = new LinearSearch(); break;
                 
                 case "Binary Search":  
-                    // AUTO-FIX: Binary Search requires sorted data to work!
-                    Arrays.sort(data); 
-                    algorithm = new BinarySearch(); 
+                    // AUTO-FIX: Binary Search requires sorted data
+                    Arrays.sort(data);
+                    algorithm = new BinarySearch();
+                    JOptionPane.showMessageDialog(null,
+                        "Binary Search requires sorted input.\nArray auto-sorted.",
+                        "Auto-Sort Applied", JOptionPane.INFORMATION_MESSAGE);
                     break;
                 
                 // --- TREE MODE LOGIC ---
-                case "Inorder Traversal (Tree)": 
+                case "Array Tree Traversal": 
                     algorithm = new InorderTraversal(); 
-                    vizPanel.setTreeMode(true); // Tell View to draw circles!
+                    vizPanel.setTreeMode(true);
                     break;
                     
                 default: algorithm = new BubbleSort(); break;
@@ -101,26 +170,50 @@ public class MainController {
             List<AlgorithmStep> steps = algorithm.generateSteps(data, target);
             animationManager.setSteps(steps);
             
-            // Get Complexity Info
-            String complexity = getComplexity(algoType);
+            // Store current algorithm context
+            currentAlgoName = algoType;
+            currentComplexity = getComplexity(algoType);
 
-            // Reset UI with extra info
+            // Reset UI with full info (step 1-based)
             vizPanel.repaint();
-            infoPanel.updateInfo("Loaded: " + algoType + " | Time Complexity: " + complexity, 0, steps.size());
+            // Start at Step 1 (Index 0)
+            infoPanel.updateInfo("Loaded: " + algoType, 1, steps.size(), currentAlgoName, currentComplexity);
             
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(null, "Error: Please enter valid numbers (e.g., '10, 20, 30')");
+            JOptionPane.showMessageDialog(null, "Error: Invalid number format.\nPlease enter integers separated by comma.");
+        } catch (IllegalArgumentException ex) {
+             JOptionPane.showMessageDialog(null, ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
+    private void handleReset() {
+        timer.stop();
+        animationManager.resetToStart();
+        vizPanel.repaint();
+        infoPanel.updateInfo("Reset — Ready.", 1, animationManager.getTotalSteps(), currentAlgoName, currentComplexity);
+    }
+
+    private void handleRestart() {
+        handleReset();
+        play();
+    }
+
     private int[] parseArray(String input) {
+        if (input == null || input.trim().isEmpty()) return new int[0];
+        
         String[] parts = input.split(",");
-        int[] arr = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) {
-            arr[i] = Integer.parseInt(parts[i].trim());
+        // Filter out empty strings caused by trailing commas
+        List<String> validParts = new java.util.ArrayList<>();
+        for (String p : parts) {
+            if (!p.trim().isEmpty()) validParts.add(p.trim());
+        }
+        
+        int[] arr = new int[validParts.size()];
+        for (int i = 0; i < validParts.size(); i++) {
+            arr[i] = Integer.parseInt(validParts.get(i));
         }
         return arr;
     }
@@ -128,14 +221,14 @@ public class MainController {
     // Helper method for complexity
     private String getComplexity(String algo) {
         switch (algo) {
-            case "Bubble Sort": return "O(n²)";
-            case "Selection Sort": return "O(n²)";
-            case "Insertion Sort": return "O(n²)";
-            case "Merge Sort": return "O(n log n)";
-            case "Quick Sort": return "O(n log n)";
-            case "Linear Search": return "O(n)";
-            case "Binary Search": return "O(log n)";
-            case "Inorder Traversal (Tree)": return "O(n)";
+            case "Bubble Sort":    return "Time: O(n²)  |  Space: O(1)";
+            case "Selection Sort": return "Time: O(n²)  |  Space: O(1)";
+            case "Insertion Sort": return "Time: O(n²)  |  Space: O(1)";
+            case "Merge Sort":     return "Time: O(n log n)  |  Space: O(n)";
+            case "Quick Sort":     return "Time: O(n log n)  |  Space: O(log n)";
+            case "Linear Search":  return "Time: O(n)  |  Space: O(1)";
+            case "Binary Search":  return "Time: O(log n)  |  Space: O(1)";
+            case "Array Tree Traversal": return "Time: O(n)  |  Space: O(h)";
             default: return "Unknown";
         }
     }
@@ -144,12 +237,14 @@ public class MainController {
 
     private void play() {
         timer.start();
-        infoPanel.updateInfo("Playing...", animationManager.getCurrentIndex(), animationManager.getTotalSteps());
+        int displayStep = animationManager.getCurrentIndex() + 1;
+        infoPanel.updateInfo("Playing...", displayStep, animationManager.getTotalSteps(), currentAlgoName, currentComplexity);
     }
 
     private void pause() {
         timer.stop();
-        infoPanel.updateInfo("Paused.", animationManager.getCurrentIndex(), animationManager.getTotalSteps());
+        int displayStep = animationManager.getCurrentIndex() + 1;
+        infoPanel.updateInfo("Paused.", displayStep, animationManager.getTotalSteps(), currentAlgoName, currentComplexity);
     }
 
     private void stepForward() {
@@ -159,10 +254,11 @@ public class MainController {
             
             // Use the advanced description if available
             String desc = (step.getDescription() != null) ? step.getDescription() : "Step Forward";
-            infoPanel.updateInfo(desc, animationManager.getCurrentIndex(), animationManager.getTotalSteps());
+            int displayStep = animationManager.getCurrentIndex() + 1;
+            infoPanel.updateInfo(desc, displayStep, animationManager.getTotalSteps(), currentAlgoName, currentComplexity);
         } else {
             timer.stop(); 
-            infoPanel.updateInfo("Visualization Complete!", animationManager.getTotalSteps(), animationManager.getTotalSteps());
+            infoPanel.updateInfo("✓ Visualization Complete!", animationManager.getTotalSteps(), animationManager.getTotalSteps(), currentAlgoName, currentComplexity);
         }
     }
 
@@ -170,7 +266,10 @@ public class MainController {
         timer.stop();
         if (animationManager.prevStep()) {
             vizPanel.repaint();
-            infoPanel.updateInfo("Step Backward", animationManager.getCurrentIndex(), animationManager.getTotalSteps());
+            AlgorithmStep step = animationManager.getCurrentStep();
+            String desc = (step.getDescription() != null) ? step.getDescription() : "Step Backward";
+            int displayStep = animationManager.getCurrentIndex() + 1;
+            infoPanel.updateInfo(desc, displayStep, animationManager.getTotalSteps(), currentAlgoName, currentComplexity);
         }
     }
 }
